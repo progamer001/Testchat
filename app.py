@@ -25,6 +25,7 @@ from base import BaseHandler
 from auth import LoginHandler
 from auth import LogoutHandler
 
+
 # Define port from command line parameter.
 tornado.options.define("port", default=8888, help="run on the given port", type=int)
 
@@ -34,9 +35,12 @@ class MainHandler(BaseHandler):
     """
     Main request handler for the root path and for chat rooms.
     """
-
+    
     @tornado.web.asynchronous
     def get(self, room=None):
+        if self.get_argument("join_room", default=""):
+            self.redirect("/room/%s" % self.get_argument("roomj", default=""))
+            return
         if not room:
             self.redirect("/room/1")
             return
@@ -44,6 +48,7 @@ class MainHandler(BaseHandler):
         self.room = str(room)
         # Get the current user.
         self._get_current_user(callback=self.on_auth)
+        
 
 
     def on_auth(self, user):
@@ -63,9 +68,16 @@ class MainHandler(BaseHandler):
         for message in result:
             messages.append(tornado.escape.json_decode(message))
         # Render template and deliver website.
-        content = self.render_string("messages.html", messages=messages)
-        self.render_default("index.html", content=content, chat=1)
 
+        content = ('<h6>Create/join room</h6>' 
+        + '<form class="form-inline" action="/" method="get"> '
+        + '<input type="hidden" name="join_room" value="1">'
+        + '<input class="form-control" type="text" name="roomj" placeholder="Room">'
+        + '<input type="submit" class="btn btn-default" value="Go">'       
+        + '</form>')
+       
+        content += self.render_string("messages.html", messages=messages)
+        self.render_default("index.html", content=content, chat=1)
 
 
 class ChatSocketHandler(tornado.websocket.WebSocketHandler):
@@ -117,7 +129,7 @@ class ChatSocketHandler(tornado.websocket.WebSocketHandler):
             datadecoded = tornado.escape.json_decode(data)
             message = {
                 '_id': ''.join(random.choice(string.ascii_uppercase) for i in range(12)),
-                'from': self.get_secure_cookie('user', str(datadecoded['user'])),
+                'from': self.get_cookie('user', str(datadecoded['user'])),
                 'body': tornado.escape.linkify(datadecoded["body"]),
             }
             if not message['from']:

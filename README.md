@@ -15,7 +15,7 @@ and missing important features like authenticated websockets, input validation a
 to show how to build a scalable real-time web application with [Tornado](http://www.tornadoweb.org/).
 
 ## Example
-You can try out a running demo of this application here: [tornado-redis-chat.herokuapp.com](http://tornado-redis-chat.herokuapp.com/)
+You can try out a running demo of this application here: [Testchat](http://evening-shore-8029.herokuapp.com/)
 
 ## Requirements and Setup
 First of all you need Redis:
@@ -29,7 +29,7 @@ sudo pip install git+https://github.com/evilkost/brukva.git
 ```
 Finally clone this repository:
 ```Bash
-git clone https://github.com/nellessen/Tornado-Redis-Chat.git chat
+git clone https://github.com/progamer001/Testchat.git chat
 cd chat
 ```
 

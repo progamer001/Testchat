@@ -11,7 +11,6 @@ from base import BaseHandler
 import logging
 
 
-
 class LoginHandler(BaseHandler, tornado.auth.GoogleMixin):
     """
     Handler for logins with Google Open ID / OAuth
@@ -29,21 +28,22 @@ class LoginHandler(BaseHandler, tornado.auth.GoogleMixin):
         elif self.get_argument("start_direct_auth", None):
             # Get form inputs.
             try:
-                user = dict()
-                user["email"] = self.get_argument("email", default="")
+                user = dict()                
                 user["name"] = self.get_argument("name", default="")
+                user["pass_login"] = self.get_argument("pass_login", default="")
+                user["password"] = ""
             except:
                 # Send an error back to client.
                 content = "<p>There was an input error. Fill in all fields!</p>"
                 self.render_default("index.html", content=content)
             # If user has not filled in all fields.
-            if not user["email"] or not user["name"]:
+            if not user["pass_login"] or not user["name"]:
                 content = ('<h2>2. Direct Login</h2>' 
                 + '<p>Fill in both fields!</p>'
                 + '<form class="form-inline" action="/login" method="get"> '
                 + '<input type="hidden" name="start_direct_auth" value="1">'
                 + '<input class="form-control" type="text" name="name" placeholder="Your Name" value="' + str(user["name"]) + '"> '
-                + '<input class="form-control" type="text" name="email" placeholder="Your Email" value="' + str(user["email"]) + '"> '
+                + '<input class="form-control" type="password" name="pass_login" placeholder="Your Password" value="' + str(user["pass_login"]) + '"> '
                 + '<input type="submit" class="btn btn-default" value="Sign in">'
                 + '</form>')
                 self.render_default("index.html", content=content)
@@ -54,8 +54,9 @@ class LoginHandler(BaseHandler, tornado.auth.GoogleMixin):
             # Get form inputs.
             try:
                 user = dict()
-                user["password"] = self.get_argument("password", default="")
                 user["name"] = self.get_argument("name", default="")
+                user["password"] = self.get_argument("password", default="")
+                user["pass_login"] = ""
             except:
                 # Send an error back to client.
                 content = "<p>There was an input error. Fill in all fields!</p>"
@@ -86,7 +87,7 @@ class LoginHandler(BaseHandler, tornado.auth.GoogleMixin):
             + '<form class="form-inline" action="/login" method="get"> '
             + '<input type="hidden" name="start_direct_auth" value="1">'
             + '<input class="form-control" type="text" name="name" placeholder="Your Name"> '
-            + '<input class="form-control" type="text" name="email" placeholder="Your Email"> '
+            + '<input class="form-control" type="password" name="pass_login" placeholder="Your Password"> '
             + '<input type="submit" class="btn btn-default" value="Sign in">'
             + '</form>')
             content += ('<h2>3. Registration</h2>' 
@@ -121,17 +122,40 @@ class LoginHandler(BaseHandler, tornado.auth.GoogleMixin):
                 # self.application.client.set("user:" + user["email"], tornado.escape.json_encode(user))
                 self.application.client.set("user:" + user["name"], tornado.escape.json_encode(user))
             else:
-                # Update existing user.
-                # @todo: Should use $set to update only needed attributes?
                 dbuser = tornado.escape.json_decode(result)
-                dbuser.update(user)
-                user = dbuser
+                # If try to register
+                if user["password"] != "":
+                    content = ('<h2>Login</h2>'
+                    + '<p>Username taken!</p>'
+                    + '<form class="form-inline" action="/login" method="get"> '
+                    + '<input type="hidden" name="start_registration" value="1">'
+                    + '<input class="form-control" type="text" name="name" placeholder="Your Name"> '
+                    + '<input class="form-control" type="password" name="password" placeholder="Your Password"> '
+                    + '<input type="submit" class="btn btn-default" value="Register">'
+                    + '</form>')
+                    self.render_default("index.html", content=content)
+                    return None
+                # If try to login
+                if user["pass_login"] != dbuser.get("password"):
+                    content = ('<h2>Login</h2>'
+                    + '<p>Password incorrect!</p>'
+                    + '<form class="form-inline" action="/login" method="get"> '
+                    + '<input type="hidden" name="start_direct_auth" value="1">'
+                    + '<input class="form-control" type="text" name="name" placeholder="Your Name"> '
+                    + '<input class="form-control" type="password" name="pass_login" placeholder="Your Password"> '
+                    + '<input type="submit" class="btn btn-default" value="Login">'
+                    + '</form>')
+                    self.render_default("index.html", content=content)
+                    return None
+                
+                # dbuser.update(user)
+                # user = dbuser
                 # self.application.client.set("user:" + user["email"], tornado.escape.json_encode(user))
-                self.application.client.set("user:" + user["name"], tornado.escape.json_encode(user))
+                # self.application.client.set("user:" + user["name"], tornado.escape.json_encode(user))
             
             # Save user id in cookie.
             # self.set_secure_cookie("user", user["email"])
-            self.set_secure_cookie("user", user["name"])
+            self.set_cookie("user", user["name"])
             # self.application.usernames[user["email"]] = user.get("name") or user["email"]
             self.application.usernames[user["name"]] = user.get("name") # or user["email"]
             # Closed client connection
