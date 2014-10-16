@@ -40,7 +40,6 @@ class MainHandler(BaseHandler):
     def get(self, room=None):
         if self.get_argument("join_room", default=""):
             self.redirect("/room/%s" % self.get_argument("roomj", default=""))
-            return
         if not room:
             self.redirect("/room/1")
             return
